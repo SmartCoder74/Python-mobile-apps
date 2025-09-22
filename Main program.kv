@@ -1,0 +1,541 @@
+from kivy.app import App
+from kivy.lang import Builder
+from kivy.uix.tabbedpanel import TabbedPanel
+from kivy.uix.checkbox import CheckBox
+from kivy.uix.textinput import TextInput
+from kivy.clock import Clock
+from kivy.uix.popup import Popup
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from kivy.uix.modalview import ModalView
+import random
+import json
+import os
+
+Builder.load_file('1.Open Shop.kv')
+Builder.load_file('2.Popup Of Restart tab.kv')
+Builder.load_file('3.Popup Of Save.kv')
+Builder.load_file('4.Popup Of Clear.kv')
+
+
+
+# ------------------------------------------------------------------ye class Open_Shop.kv se linked hai Open_Shop ke sare widgets ke logic yaha likhe hai                                                             ---------------------------------------------------------------------
+class Open_Shop(TabbedPanel):
+	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+		
+		# isse automatic har digits calculate 		ho rahe hai
+		Clock.schedule_interval(self.						Calculate_digits, 0)
+		
+		# isse automatic har True checkbox 		ke amount calculate ho rahe hai
+		Clock.schedule_interval(self.						Calculate_amount, 0)
+		
+		# isse jo popup open hoga wo restart 		nhi hoga reuse hoga
+		self.save_popup = 										Popup_Of_Save(PS_widget=self)
+		
+		
+		
+# ------------------------------------------------------------------
+		self.load_state()
+
+	def save_state(self):
+		state = {
+			"date": self.ids.Date.text,
+			"final_amount": self.ids.								Final_amount.text,
+			"products": [],
+			"saved_items": [] 
+		}
+
+		# ---- For main For Sale tab ----
+		for cb, name, rq, amt in zip(
+			self.ids.Check_box.children,
+			self.ids.Product_name.children,
+			self.ids.Rate_and_quentity.children,
+			self.ids.Total_amount.children,
+		):
+			
+			state["products"].append({
+				"checkbox": cb.active,
+				"product_name": name.text,
+				"rate_and_quentity": rq.text,
+				"total_amount": amt.text
+			})
+
+		# ---- For Saved popup ----
+		saved_buttons = self.save_popup.ids.		Saved_button.children
+		
+		saved_checkboxes = self.save_popup.		ids.Saved_checkbox.children
+
+		for btn, chk in zip(saved_buttons, 				saved_checkboxes):
+			
+			state["saved_items"].append({
+				"text": btn.text,
+				"active": chk.active
+			})
+
+		with open("app_state.json", "w") as f:
+			json.dump(state, f)
+
+	def load_state(self):
+		
+		if not os.path.exists("app_state.json"):
+			return
+			
+		with open("app_state.json", "r") as f:
+			state = json.load(f)
+
+		# ---- restore main For Sale tab ----
+		self.ids.Date.text = state.get("date", 			"")
+		
+		self.ids.Final_amount.text = state.			get("final_amount", "")
+
+		self.ids.Check_box.clear_widgets()
+		
+		self.ids.Product_name.								clear_widgets()
+		
+		self.ids.Rate_and_quentity.							clear_widgets()
+		
+		self.ids.Total_amount.clear_widgets()
+
+		for item in state.get("products", []):
+			
+			cb = CheckBox(size_hint=(None, 				None), width=75, height=100)
+			
+			cb.active = item.get("checkbox", 				False)
+
+			name = TextInput(
+				text=item.get("product_name", ""),
+				size_hint=(None, None), 								width=500, height=100
+			)
+			
+			rq = TextInput(
+				text=item.get("rate_and_quentity",			 ""),
+				size_hint_y=None, height=100
+			)
+			
+			amt = TextInput(
+				text=item.get("total_amount", ""),
+				size_hint_y=None, height=100
+			)
+
+			self.ids.Check_box.add_widget(cb)
+			
+			self.ids.Product_name.								add_widget(name)
+			
+			self.ids.Rate_and_quentity.							add_widget(rq)
+			
+			self.ids.Total_amount.									add_widget(amt)
+
+		# ---- restore Saved popup ----
+		for item in state.get("saved_items", 			[]):
+			
+			button = Button(
+				text=item["text"],
+				size_hint=(None, None),
+				width=715,
+				height=115,
+				bold=True,
+				font_size='17sp'
+			)
+			
+			checkbox = CheckBox(
+				size_hint=(None, None),
+				width=65,
+				height=115,
+				active=item["active"]
+			)
+
+			# button bind
+			button.bind(
+				on_release=lambda instance, 					Date_value=item["text"]: self.						save_popup.Show_data(
+					state.get("products", []),
+					[state.get("products", 									[])[i]["rate_and_quentity"] for i 						in range(len(state.										get("products", [])))],
+					[state.get("products", 									[])[i]["total_amount"] for i in 						range(len(state.get("products", 					[])))],
+					Date_value
+				)
+			)
+
+			self.save_popup.ids.Saved_button.			add_widget(button)
+			
+			self.save_popup.ids.									Saved_checkbox.											add_widget(checkbox)
+# ------------------------------------------------------------------
+
+
+            
+	# ----- Add_inputs: containers me 				CheckBox aur TextInput banane ke liye 	hai-----
+	def Add_inputs(self):
+				
+		# while loop ek hi click me 5 line 				me CheckBox aur TextInputs banane 		ke liye hai
+		Five_inputs = 0
+		while (Five_inputs < 5):
+			
+			# isse ChekBox banta hai
+			Check_box = CheckBox(			
+				size_hint=(None, None),
+			    width=75,
+			    height=100,
+			)
+			self.ids.Check_box.										add_widget(Check_box)
+			
+			# isse TextInput banega 
+			Product_name = TextInput(
+			    hint_text='Write product name',
+			    size_hint = (None, None),
+				width = 500,
+				height = 100,
+			)
+			self.ids.Product_name.								add_widget(Product_name)
+			
+			# isse TextInput banega 
+			Rate_and_quentity = TextInput(
+				hint_text = '0',
+				size_hint_y = None,
+				height = 100,
+			)
+			self.ids.Rate_and_quentity.							add_widget(Rate_and_quentity)
+			
+			# isse TextInput banega 
+			Total_amount = TextInput(
+				hint_text = '0',
+				size_hint_y = None,
+				height = 100,				
+			)
+			self.ids.Total_amount.									add_widget(Total_amount)
+			
+			Five_inputs += 1
+			
+			
+	# ----- Calculate_digit: digits 						calculate karne ke liye hai -----
+	def Calculate_digits(self, Cd):
+		
+		# Rate_and_quentity aur 								Total_amount container ke widget ko 		Child_3 aur Child_4 me store kro
+		Child_3 = self.ids.Rate_and_quentity.		children
+		
+		Child_4 = self.ids.Total_amount.				children
+		
+		# For loop Child_1 aur Child_2 ko 				Iterate karta hai
+		for (Iterat_Child_3, Iterat_Child_4) in 		zip(Child_3, Child_4):
+			
+			try:
+				
+				# Calculate_digits, Iterat_Child_1 				TextInput ke text ko calculate 					karke store kar raha hai
+				Calculate_digits = 										eval(Iterat_Child_3.text)
+				
+				# Iterat_Child_4 TextInput widget 				ki property me Calculate_digits 					ko update kro
+				Iterat_Child_4.text = 									str(Calculate_digits)
+				
+			except:
+				Iterat_Child_4.text = 'Error'
+				
+	
+	# ----- Calculate_amount: jitne bhi 				checkbox true hai unsab ke amount ko 	apas me plus(+) karne ke liye hai -----
+	def Calculate_amount(self, Ca):
+		
+		# Child_1 aur Child_4 me Check_box 		aur TextInput GridLayouts container 		ke sare widget stored hai
+		Child_1 = self.ids.Check_box.children
+		
+		Child_4 = self.ids.Total_amount.				children
+		
+		# yaha sare amount plus(+) honge
+		Get_amount = 0
+		
+		# Child_1 aur 2 ko iterat karke					Iterat_Child_1 aur 2 me store kro
+		for (Iterat_Child_1, Iterat_Child_4) in 		zip(Child_1, Child_4):
+			
+			# agr Iterat_Child_1 true hai to 					Get_amiunt me Iterat_Child_4 ka 				text bhejo
+			if Iterat_Child_1.active:
+				try:
+					Get_amount += 											int(Iterat_Child_4.text)
+				
+				except:
+					self.ids.Total_price.text = 							'Error'
+					
+		# Total price textinput widget ki 				property me Get_amount ko update 			kro
+		self.ids.Total_price.text = 							str(Get_amount)
+		
+
+	# ----- False_all_checkbox: jitne bhi 			Checkbox true hai unhe false karne ke 		liye hai -----
+	def False_all_checkbox(self):
+		
+		# Child_1 me Check_box GridLayout 		container ke sare widget stored hai
+		Child_1 = self.ids.Check_box.children
+		
+		# Child_1 ko iterat karke 								Iterat_Child_1 me store kro
+		for Iterat_Child_1 in Child_1:
+			
+			# jitne bhi Iterat_Child_1 Checkbox 			true hai unhe false kro
+			if Iterat_Child_1.active:
+				Iterat_Child_1.active = False
+				
+				
+	# ----- Popup_Of_Restart_tab: isse For 		Sale aur For Total dono tab Re-start 			hoga -----
+	def Popup_Of_Restart_tab(self):
+		popup = Popup_Of_Restart_tab(PC_widget=self)
+		popup.open()
+		
+	
+	# ----- Final_amount: isse For sale ke 		sare amount apas me plus(+) honge -----
+	def Final_amount(self):
+		
+		# Textinput per waiting show hoga
+		self.ids.Final_amount.text = 'Waiting'
+		
+		# Random number shaduling 					mechanism ko dega
+		Second = random.randint(5, 10)
+		
+		# jitna number mila hai utna second 		baad ye Update_Final_amount fun ko 		run karega
+		Clock.schedule_once(self.							Update_Final_amount, Second)
+		
+		# ye shaduling mechanism se 					connect hai
+	def Update_Final_amount(self, UFa):
+		
+		# yaha sare amount plus(+) honge
+		Get_amount = 0
+		
+		# Child_4 me Total_amount naam ke 		GridLayout container ke widgets 				stored hai
+		Child_4 = self.ids.Total_amount.				children
+		
+		# Child_4 ko Iterat karke 								Iterat_Child_4 me store kro
+		for Iterat_Child_4 in Child_4:			
+			try:
+				Get_amount += int(Iterat_Child_4.				text)
+				
+			except:
+				pass
+				
+		# Final_amount TextInput me 					Get_amount ko update kro
+		self.ids.Final_amount.text = 						str(Get_amount)
+		
+	
+	# ----- Popup_Of_Save: isse For Sale aur 	For Total dono tab ko Re-start karne ke 	liye ek Popup Open karega -----
+	def Popup_Of_Save(self):
+		self.save_popup.open()
+		
+		
+		
+# ------------------------------------------------------------------Popup_Of_CAI: Button pe click hone se ek Popup user ko warn karega us popup ka logic is class me hai                                       ---------------------------------------------------------------------
+class Popup_Of_Restart_tab(Popup):
+	def __init__(self, PC_widget, **kwargs):
+	       super().__init__(**kwargs)
+	       self.PC_widget = PC_widget
+	       
+	       
+	# ----- Clear_all_info: isse For Sale ke 		sare inputs me likhe gaye information 		clear hote hai -----
+	def Restart_Tab(self):
+		
+		# Child_1, 2, 3, aur 4 me Check_box, 			Product_name, Rate_and_quentity, 			aur Total_amount naam ke container 		ke widgets stored hai
+		Child_1 = list(self.PC_widget.ids.				Check_box.children)
+		
+		Child_2 = list(self.PC_widget.ids.				Product_name.children)
+		
+		Child_3 = list(self.PC_widget.ids.				Rate_and_quentity.children)
+		
+		Child_4 = list(self.PC_widget.ids.				Total_amount.children)
+		
+		# ye check karta hai ke Checkbox me 		koi widget True hai kya 
+		Any_checkbox = any(Checkbox.active 		for Checkbox in Child_1)
+		
+		# for loop Child_1, 2 3 aur 4 ko Iterat 		karne ke liye hai
+		for (Iterat_Child_1, Iterat_Child_2, 				Iterat_Child_3, Iterat_Child_4) in 				zip(Child_1, Child_2, Child_3, Child_4):
+			
+			# jo jo checkbox true hai wo 						checkbox aur une line ke sare 					widget remover kro
+			if Any_checkbox and Iterat_Child_1.			active:
+				
+				try:
+					self.PC_widget.ids.Check_box.					remove_widget(Iterat_Child_1)
+					
+					self.PC_widget.ids.										Product_name.												remove_widget(Iterat_Child_2)
+					
+					self.PC_widget.ids.										Rate_and_quentity.										remove_widget(Iterat_Child_3)
+					
+					self.PC_widget.ids.										Total_amount.												remove_widget(Iterat_Child_4)
+					
+				except:
+					pass
+			
+			# Agr sare checkbox false hai to 				sare checkbox aur unke line ke sare 			widget ko remove kro
+			elif not Any_checkbox:
+				
+				try:
+					self.PC_widget.ids.Check_box.					remove_widget(Iterat_Child_1)
+					
+					self.PC_widget.ids.										Product_name.												remove_widget(Iterat_Child_2)
+					
+					self.PC_widget.ids.										Rate_and_quentity.										remove_widget(Iterat_Child_3)
+					
+					self.PC_widget.ids.										Total_amount.												remove_widget(Iterat_Child_4)
+					
+					self.PC_widget.ids.Date.text = 					''
+					
+					self.PC_widget.ids.										Final_amount.text = ''
+					
+				except:
+					pass
+					
+		self.dismiss()
+		
+		
+		
+# ------------------------------------------------------------------Popup_Of_Save: button se ek Popup open hoga us Popup ke logica yaha likhe hai       ---------------------------------------------------------------------
+class Popup_Of_Save(Popup):
+	def __init__(self, PS_widget, **kwargs):
+	    super().__init__(**kwargs)
+	    self.PS_widget = PS_widget
+	    
+	# ----- Saved_here: Textinput me likhe 		hue info save karega -----
+	def Saved_here(self):
+	    
+	    # yaha Product_name, 								Rate_and_quentity, Amount ki value 			store hogi
+	    Product_name = []
+	    Rate_and_quentity = []
+	    Total_amount = []
+	    
+	    # Child_2, 3, aur 4 me Product_name, 		Rate_and_quentity, Amount naam 			GridLayou container stored hai
+	    Child_2 = self.PS_widget.ids.						Product_name.children
+	    
+	    Child_3 = self.PS_widget.ids.						Rate_and_quentity.children
+	    
+	    Child_4 = self.PS_widget.ids.						Total_amount.children
+	    
+	    # Child_2, 3, 4 ko Iterate kro sahi 				order me 
+	    for Iterat_Child_2, Iterat_Child_3, 				Iterat_Child_4 in zip(
+	        reversed(Child_2),
+	        reversed(Child_3),
+	        reversed(Child_4)
+	    ):
+	       # Agr Iterat_Child_2, 3, aur 4 me 				Text Property hai to Product_name, 			Rate_and_quentity, Amount ko 					append kro
+	        if hasattr(Iterat_Child_2, 'text'):
+	            Product_name.												append(Iterat_Child_2.text)
+	
+	        if hasattr(Iterat_Child_3, 'text'):
+	            Rate_and_quentity.										append(Iterat_Child_3.text)
+	
+	        if hasattr(Iterat_Child_4, 'text'):
+	            Total_amount.												append(Iterat_Child_4.text)
+		    	
+	    # TextInput hai date ke liye
+	    Date = self.PS_widget.ids.Date.text
+	    
+	    # Button hai
+	    button = Button(
+	        text = f'{Date}',
+	        size_hint=(None, None),
+			width=715,
+			height=115,
+	        bold = True,
+	        font_size = '17sp'
+	    )
+	    self.ids.Saved_button.									add_widget(button)
+	    
+	    # Checkbox hai
+	    Check_box = CheckBox(
+	    	size_hint=(None, None),
+			width=65,
+			height=115,
+	    )
+	    self.ids.Saved_checkbox.							add_widget(Check_box)
+	    
+	    # button pe click karne se kuch task 		perfom ho
+	    button.bind(
+	        on_release=lambda instance,
+	        product_name=list(Product_name),			rate_and_quentity=
+	        list(Rate_and_quentity),
+	        total_amount=list(Total_amount),
+	        Date_value=Date: self.									Show_data(product_name, 						rate_and_quentity, total_amount, 				Date_value)
+	    )
+	    	    
+	    
+	# ----- Show_data: on_release se value 		yaha aaya hai -----
+	def Show_data(self, Pn, Raq, Ta, Dv):
+	    
+	    # Child_2, 3, aur 4 me Product_name, 		Rate_and_quentity, Amount naam 			GridLayou container stored hai
+	    Child_2 = self.PS_widget.ids.						Product_name.children
+	    
+	    Child_3 = self.PS_widget.ids.						Rate_and_quentity.children
+	    
+	    Child_4 = self.PS_widget.ids.						Total_amount.children
+	    
+	    # Child_2, 3, 4 ko Iterate kro sahi 				order me 
+	    for Iterat_Child_2, Iterat_Child_3, 				Iterat_Child_4, val2, val3, val4 in zip(
+	        reversed(Child_2),
+	        reversed(Child_3),
+	        reversed(Child_4),
+	        Pn,
+	        Raq,
+	        Ta
+	    ):
+	        # Age Text Property to val2, val3,				val4 ko Iterat_Child_2, 3 aur 4 me 				update kro
+	        if hasattr(Iterat_Child_2, 'text'):
+	        	Iterat_Child_2.text = str(val2)
+	        
+	        if hasattr(Iterat_Child_3, 'text'):
+	        	Iterat_Child_3.text = str(val3)
+	        
+	        if hasattr(Iterat_Child_4, 'text'):
+	            Iterat_Child_4.text = str(val4)
+	            
+	    self.PS_widget.ids.Date.text = Dv
+	    self.dismiss()
+	    
+	    
+	# ----- Clear_save_button: Saved_button 	aur checkbox ko remove karne se pehle 	warn karne ke liye ek Popup open 				karega -----
+	def Clear_save_button(self):
+		popup = 															Popup_Of_Clear(Cb_widget=self)
+		popup.open()
+		
+		
+		
+# ------------------------------------------------------------------Popup_Of_Clear: button se ek Popup open hoga us Popup ke logics yaha likhe hai       ---------------------------------------------------------------------
+class Popup_Of_Clear(Popup):
+	def __init__(self, Cb_widget, **kwargs):
+	       super().__init__(**kwargs)
+	       self.Cb_widget = Cb_widget
+	       
+	       
+	# ----- Clear_all_widget: isse 						Saved_button aur Saved_checkbox 			naam ke container ke widgets remove 	hote hai -----
+	def Clear_all_widget(self):
+	    
+	    # Child_1 aur 2 me Saved_button, 			Saved_checkbox naam ke container 		ke widget stored hai
+	    Child_1 = list(self.Cb_widget.ids.				Saved_button.children)
+	    
+	    Child_2 = list(self.Cb_widget.ids.				Saved_checkbox.children)
+	    
+	    # ye check karta hai ke Checkbox me 		koi widget True hai kya
+	    Any_checkbox = any(Checkbox.active 		for Checkbox in Child_2)
+	    
+	    # ye Child_1 aur 2 ko iterate karta hai
+	    for (Iterat_Child_1, Iterat_Child_2) in 		zip(Child_1, Child_2):
+	        
+	        # jo jo Any_checkbox true hai 					container se unke widget remove 				kar do
+	        if Any_checkbox and Iterat_Child_2.			active:
+	            
+	            try:
+	                self.Cb_widget.ids.										Saved_button.												remove_widget(Iterat_Child_1)
+	                
+	                self.Cb_widget.ids.										Saved_checkbox.											remove_widget(Iterat_Child_2)
+	                
+	            except:
+	                pass
+	                
+	        # Agr sare Any_checkbox fals hai 				to sare widget container se remove 			kar do
+	        elif not Any_checkbox:
+	            
+	            try:
+	                self.Cb_widget.ids.										Saved_button.												remove_widget(Iterat_Child_1)
+	                
+	                self.Cb_widget.ids.										Saved_checkbox.											remove_widget(Iterat_Child_2)
+	                
+	            except:
+	                pass
+	                
+	    self.dismiss()
+	
+class MyApp(App):
+	def build(self):
+		return Open_Shop()
+		
+	def on_stop(self):
+		self.root.save_state()
+MyApp().run()
