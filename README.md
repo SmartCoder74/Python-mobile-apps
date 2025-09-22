@@ -3,6 +3,6 @@
 “A simple Python Kivy billing app for small stores”
 
 ## Screenshots
-![Product Entry](images/screenshot1.jpg)
-![Calculation](images/screenshot2.jpg)
-![Total Display](images/screenshot3.jpg)
+![Product Entry](Screenshot1758531224961~2.JPG)
+![Calculation](Screenshot1758531322120~2.JPG)
+![Total Display](Screenshot1758531347036~2.JPG)
